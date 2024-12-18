@@ -1,8 +1,9 @@
-﻿using ProductLaunch.Entities;
+using ProductLaunch.Entities;
 using ProductLaunch.Model;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading.Tasks;
 using System.Web.UI;
 using System.Web.UI.WebControls;
 
@@ -12,6 +13,12 @@ namespace ProductLaunch.Web
     {
         private static Dictionary<string, Country> _Countries;
         private static Dictionary<string, Role> _Roles;
+        private readonly ProductLaunchContext _context;
+
+        public SignUp(ProductLaunchContext context)
+        {
+            _context = context;
+        }
 
         public static void PreloadStaticDataCache()
         {
@@ -51,7 +58,7 @@ namespace ProductLaunch.Web
             ddlCountry.Items.AddRange(_Countries.Select(x => new ListItem(x.Value.CountryName, x.Key)).ToArray());
         }
 
-        protected void btnGo_Click(object sender, EventArgs e)
+        protected async void btnGo_Click(object sender, EventArgs e)
         {
             var country = _Countries[ddlCountry.SelectedValue];
             var role = _Roles[ddlRole.SelectedValue];
@@ -66,15 +73,12 @@ namespace ProductLaunch.Web
                 Role = role
             };
 
-            using (var context = new ProductLaunchContext())
-            {
-                //reload child objects:
-                prospect.Country = context.Countries.Single(x => x.CountryCode == prospect.Country.CountryCode);
-                prospect.Role = context.Roles.Single(x => x.RoleCode == prospect.Role.RoleCode);
+            //reload child objects:
+            prospect.Country = await _context.Countries.SingleAsync(x => x.CountryCode == prospect.Country.CountryCode);
+            prospect.Role = await _context.Roles.SingleAsync(x => x.RoleCode == prospect.Role.RoleCode);
 
-                context.Prospects.Add(prospect);
-                context.SaveChanges();
-            }
+            _context.Prospects.Add(prospect);
+            await _context.SaveChangesAsync();
 
             Server.Transfer("ThankYou.aspx");
         }
